@@ -1,80 +1,66 @@
 import Foundation
 
-enum TailBarError: LocalizedError {
-    case tailscaleNotFound
-    case commandFailed(status: Int, stderr: String)
+/// Tailscale client that communicates via the CLI executable.
+/// Used as a fallback when Local API is unavailable.
+final class CLITailscaleClient: TailscaleClientProtocol, @unchecked Sendable {
+    private let tailscalePath: String
 
-    var errorDescription: String? {
-        switch self {
-        case .tailscaleNotFound:
-            return "Tailscale CLI not found. Is Tailscale installed?"
-        case .commandFailed(let status, let stderr):
-            return "Command failed (\(status)): \(stderr)"
-        }
-    }
-}
-
-enum TailscaleClient {
-    private static let tailscalePath: String = {
+    init() {
         let candidates = [
             "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
             "/opt/homebrew/bin/tailscale",
             "/usr/local/bin/tailscale",
         ]
-        for path in candidates {
-            if FileManager.default.isExecutableFile(atPath: path) {
-                return path
-            }
-        }
-        return candidates[0]
-    }()
+        self.tailscalePath = candidates.first {
+            FileManager.default.isExecutableFile(atPath: $0)
+        } ?? candidates[0]
+    }
 
     // MARK: - Status
 
-    static func fetchStatus() async throws -> TailscaleStatus {
+    func fetchStatus() async throws -> TailscaleStatus {
         let data = try await run("status", "--json")
         return try JSONDecoder().decode(TailscaleStatus.self, from: data)
     }
 
-    static func fetchServeConfig() async throws -> ServeConfig {
+    func fetchServeConfig() async throws -> ServeConfig {
         let data = try await run("serve", "status", "--json")
         return try JSONDecoder().decode(ServeConfig.self, from: data)
     }
 
     // MARK: - Serve Management
 
-    static func addServe(port: Int) async throws {
+    func addServe(port: Int) async throws {
         _ = try await run("serve", "--bg", String(port))
     }
 
-    static func removeServe(port: Int) async throws {
+    func removeServe(port: Int) async throws {
         _ = try await run("serve", "--https=\(port)", "off")
     }
 
-    static func resetServes() async throws {
+    func resetServes() async throws {
         _ = try await run("serve", "reset")
     }
 
     // MARK: - Funnel Management
 
-    static func enableFunnel(port: Int) async throws {
+    func enableFunnel(port: Int) async throws {
         _ = try await run("funnel", "--bg", String(port))
     }
 
-    static func disableFunnel(port: Int) async throws {
+    func disableFunnel(port: Int) async throws {
         _ = try await run("funnel", "--https=\(port)", "off")
     }
 
     // MARK: - Network
 
-    static func ping(hostname: String) async throws -> String {
+    func ping(hostname: String) async throws -> String {
         let data = try await run("ping", "--c", "1", "--timeout", "5s", hostname)
         return String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
-    /// TCP connect test to a local port.
-    static func checkPort(_ port: Int) async -> Bool {
+    func checkPort(_ port: Int) async -> Bool {
         await Task.detached {
             let sock = socket(AF_INET, SOCK_STREAM, 0)
             guard sock >= 0 else { return false }
@@ -101,7 +87,7 @@ enum TailscaleClient {
 
     // MARK: - Shell
 
-    private static func run(_ arguments: String...) async throws -> Data {
+    private func run(_ arguments: String...) async throws -> Data {
         let path = tailscalePath
         let args = Array(arguments)
 

@@ -1,0 +1,47 @@
+{
+  "Version": "1.60.0",
+  "BackendState": "Running",
+  "TUN": true,
+  "TailscaleIPs": ["100.64.0.1"],
+  "Self": {
+    "ID": "self-node-id",
+    "HostName": "my-mac",
+    "DNSName": "my-mac.tail12345.ts.net.",
+    "OS": "macOS",
+    "TailscaleIPs": ["100.64.0.1"],
+    "Online": true,
+    "ExitNode": false,
+    "ExitNodeOption": false,
+    "Active": true,
+    "Relay": "tok",
+    "RxBytes": 1024,
+    "TxBytes": 2048,
+    "KeyExpiry": "2025-12-31T00:00:00Z"
+  },
+  "Peer": {
+    "peer-1": {
+      "ID": "peer-1",
+      "HostName": "server-1",
+      "DNSName": "server-1.tail12345.ts.net.",
+      "OS": "linux",
+      "TailscaleIPs": ["100.64.0.2"],
+      "Online": true,
+      "ExitNode": false,
+      "ExitNodeOption": true,
+      "Active": true,
+      "LastSeen": "2025-01-01T12:00:00Z",
+      "Relay": "sfo",
+      "CurAddr": "192.168.1.100:41641",
+      "RxBytes": 4096,
+      "TxBytes": 8192,
+      "KeyExpiry": "2025-06-15T00:00:00Z"
+    }
+  },
+  "CurrentTailnet": {
+    "Name": "example@gmail.com",
+    "MagicDNSSuffix": "tail12345.ts.net",
+    "MagicDNSEnabled": true
+  },
+  "MagicDNSSuffix": "tail12345.ts.net",
+  "CertDomains": ["my-mac.tail12345.ts.net"]
+}
