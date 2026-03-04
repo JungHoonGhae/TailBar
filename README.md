@@ -10,20 +10,65 @@
 | :-----| :----- |
 | [<img alt="X link" src="https://img.shields.io/badge/Follow-%40lucas_ghae-000000?style=flat-square&logo=x&labelColor=black" width="156px" />](https://x.com/lucas_ghae) | Follow [@lucas_ghae](https://x.com/lucas_ghae) on X for updates. |
 
-Tailscale management menu bar app for macOS — manage serves, funnels, peers, and exit nodes from your menu bar.
+A native macOS menu bar app for Tailscale — manage serves, funnels, peers, and exit nodes without leaving your workflow.
+
+## Why TailBar?
+
+### The problem: Tailscale on macOS lacks a power-user interface
+
+If you run `tailscale serve` to expose dev servers, manage exit nodes across your tailnet, or switch between multiple Tailscale accounts, your current options are:
+
+| Tool | What you have to do |
+|------|-------------------|
+| **Tailscale macOS app** | Shows basic connection status. No serve management, no exit node browsing, no traffic stats. You still need the terminal for anything useful. |
+| **CLI (`tailscale`)** | Full-featured, but requires remembering commands, parsing JSON output, and switching between terminal and your editor constantly. |
+| **Admin console (web)** | Powerful for network-wide config, but overkill for "which port am I serving?" or "switch my exit node." Requires opening a browser. |
+
+**The daily friction looks like this:**
+
+1. You're coding, want to expose port 3000 → switch to terminal → `tailscale serve https / http://localhost:3000` → switch back
+2. Need to check if funnel is on → `tailscale serve status --json` → read JSON → figure it out
+3. Want to switch exit node → `tailscale set --exit-node=...` → but which nodes are available? → `tailscale status --json | jq '.Peer[] | select(.ExitNodeOption)'` → pick one → set it
+4. Colleague asks "what's my Tailscale IP?" → `tailscale ip` → copy → paste
+
+Every interaction breaks your flow.
+
+### TailBar solves this
+
+**TailBar** puts everything in your menu bar — one click to see, manage, and control your entire Tailscale setup:
+
+| | Tailscale macOS app | CLI | Admin console | **TailBar** |
+|---|:---:|:---:|:---:|:---:|
+| View connection status | ✅ | ✅ | ✅ | ✅ |
+| Add/remove HTTPS serves | — | ✅ | — | ✅ |
+| Toggle funnel per service | — | ✅ | — | ✅ |
+| Browse & switch exit nodes | — | ✅ | ✅ | ✅ |
+| Suggested exit node | — | — | — | ✅ |
+| Peer traffic stats (rx/tx) | — | ✅ | ✅ | ✅ |
+| Auto-detect dev ports | — | — | — | ✅ |
+| Service health checks | — | — | — | ✅ |
+| Switch accounts/profiles | ✅ | ✅ | — | ✅ |
+| Send files (Taildrop) | ✅ | ✅ | — | ✅ |
+| System notifications | — | — | — | ✅ |
+| Key expiry warnings | — | — | ✅ | ✅ |
+| No terminal needed | ✅ | — | ✅ | ✅ |
+| No browser needed | ✅ | ✅ | — | ✅ |
+| Real-time updates | — | — | — | ✅ |
+
+Under the hood, TailBar uses the **Tailscale Local API** (the same interface the official apps use internally) for instant response times, with CLI as automatic fallback.
 
 ## Features
 
-- **Serve Management** — Add, remove, and monitor Tailscale HTTPS serves directly from the menu bar
-- **Funnel Toggle** — Enable/disable public internet access per service with one click
-- **Peer Monitoring** — View all nodes in your tailnet with connection type, traffic stats, and key expiry
-- **Exit Node Control** — Browse, select, and switch exit nodes with suggested node support
-- **Port Detection** — Auto-detect common dev ports (3000, 8080, etc.) and quick-serve them
-- **Service Health** — Real-time health checks on backend connectivity
-- **Multi-Profile** — Switch between Tailscale accounts/profiles
-- **Taildrop** — Send files to peers via Tailscale file sharing
-- **System Notifications** — Alerts for peer changes, key expiry, and service health
-- **Local API** — Uses Tailscale Local API for fast, direct communication (CLI fallback included)
+- 🌐 **Serve Management** — Add, remove, and monitor HTTPS serves from the menu bar
+- 🔓 **Funnel Toggle** — Enable/disable public internet access per service with one click
+- 💻 **Peer Monitoring** — All nodes in your tailnet with connection type (direct/DERP), traffic stats, and key expiry
+- 🌍 **Exit Node Control** — Browse, select, and switch exit nodes with smart suggestions
+- 🔍 **Port Detection** — Auto-detect running dev servers (3000, 8080, etc.) and quick-serve them
+- 🏥 **Service Health** — Real-time health checks on backend connectivity
+- 👤 **Multi-Profile** — Switch between Tailscale accounts without signing out
+- 📁 **Taildrop** — Send files to peers via Tailscale's built-in file sharing
+- 🔔 **System Notifications** — Alerts for peer changes, key expiry, and service health degradation
+- ⚡ **Local API** — Direct communication via Tailscale Local API (CLI fallback included)
 
 ## Screenshots
 
@@ -80,6 +125,17 @@ Just run `TailBar` — it lives in your menu bar as a background app (no Dock ic
 - Notification preferences
 - Local API vs. CLI preference
 
+## How it connects to Tailscale
+
+TailBar uses the **Tailscale Local API** (preferred) or **CLI** (fallback):
+
+| Method | How it works |
+|--------|-------------|
+| **Local API** | Reads port from `/Library/Tailscale/ipnport`, auth token from `/Library/Tailscale/sameuserproof-{port}`, then HTTP to `127.0.0.1:{port}` |
+| **CLI** | Executes `/Applications/Tailscale.app/Contents/MacOS/Tailscale` (or homebrew path) with `--json` flags |
+
+The Local API is the same interface the Tailscale desktop app uses internally — no CLI subprocess overhead, instant responses, and real-time streaming via `watch-ipn-bus`.
+
 ## Architecture
 
 ```
@@ -101,19 +157,11 @@ TailBar/
 ```
 
 **Key design decisions:**
-- **Protocol-based client** — `TailscaleClientProtocol` enables DI and testing
-- **Local API first** — Uses `http://127.0.0.1:{port}` with `Sec-Tailscale` auth, falls back to CLI
+- **Protocol-based client** — `TailscaleClientProtocol` enables dependency injection and testing
+- **Local API first** — `http://127.0.0.1:{port}` with `Sec-Tailscale` auth, falls back to CLI automatically
 - **watch-ipn-bus streaming** — Real-time updates via Tailscale's event bus, polling as fallback
 - **Actor-based cache** — Thread-safe response caching with TTL
-
-## How it connects to Tailscale
-
-TailBar uses the **Tailscale Local API** (preferred) or **CLI** (fallback):
-
-| Method | How it works |
-|--------|-------------|
-| **Local API** | Reads port from `/Library/Tailscale/ipnport`, auth token from `/Library/Tailscale/sameuserproof-{port}`, then HTTP to `127.0.0.1:{port}` |
-| **CLI** | Executes `/Applications/Tailscale.app/Contents/MacOS/Tailscale` (or homebrew path) with `--json` flags |
+- **Connection state machine** — `disconnected → connecting → connected → error → reconnecting` with exponential backoff
 
 ## Development
 
