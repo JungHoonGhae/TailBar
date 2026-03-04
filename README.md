@@ -16,7 +16,7 @@ A native macOS menu bar app for Tailscale — manage serves, funnels, peers, and
 
 ### The problem: Tailscale on macOS lacks a power-user interface
 
-If you run `tailscale serve` to expose dev servers, manage exit nodes across your tailnet, or switch between multiple Tailscale accounts, your current options are:
+If you run `tailscale serve` to expose dev servers or manage exit nodes across your tailnet, your current options are:
 
 | Tool | What you have to do |
 |------|-------------------|
@@ -47,9 +47,6 @@ Every interaction breaks your flow.
 | Peer traffic stats (rx/tx) | — | ✅ | ✅ | ✅ |
 | Auto-detect dev ports | — | — | — | ✅ |
 | Service health checks | — | — | — | ✅ |
-| Switch accounts/profiles | ✅ | ✅ | — | ✅ |
-| Send files (Taildrop) | ✅ | ✅ | — | ✅ |
-| System notifications | — | — | — | ✅ |
 | Key expiry warnings | — | — | ✅ | ✅ |
 | No terminal needed | ✅ | — | ✅ | ✅ |
 | No browser needed | ✅ | ✅ | — | ✅ |
@@ -65,9 +62,6 @@ Under the hood, TailBar uses the **Tailscale Local API** (the same interface the
 - 🌍 **Exit Node Control** — Browse, select, and switch exit nodes with smart suggestions
 - 🔍 **Port Detection** — Auto-detect running dev servers (3000, 8080, etc.) and quick-serve them
 - 🏥 **Service Health** — Real-time health checks on backend connectivity
-- 👤 **Multi-Profile** — Switch between Tailscale accounts without signing out
-- 📁 **Taildrop** — Send files to peers via Tailscale's built-in file sharing
-- 🔔 **System Notifications** — Alerts for peer changes, key expiry, and service health degradation
 - ⚡ **Local API** — Direct communication via Tailscale Local API (CLI fallback included)
 
 ## Screenshots
@@ -96,10 +90,11 @@ cp .build/release/TailBar /usr/local/bin/
 TailBar
 ```
 
-### Homebrew (coming soon)
+### Homebrew
 
 ```bash
-brew install --cask JungHoonGhae/tap/tailbar
+brew tap JungHoonGhae/tailbar
+brew install tailbar
 ```
 
 ## Usage
@@ -122,7 +117,6 @@ Just run `TailBar` — it lives in your menu bar as a background app (no Dock ic
 **Settings:**
 - Refresh interval (5s / 10s / 30s / 1m)
 - Popover vs. classic menu toggle
-- Notification preferences
 - Local API vs. CLI preference
 
 ## How it connects to Tailscale
@@ -197,9 +191,11 @@ GitHub Actions workflow runs on every push/PR to `main`:
 
 ## Roadmap
 
+- [ ] Multi-profile switching (switch Tailscale accounts)
+- [ ] Taildrop file sharing (send files to peers)
+- [ ] System notifications (peer changes, key expiry, health alerts)
 - [ ] Xcode `.app` bundle (code signing, notarization, app icon)
 - [ ] Sparkle auto-update framework
-- [ ] Homebrew Cask distribution
 - [ ] MagicDNS name display and copy
 - [ ] Dark mode semantic colors (Asset Catalog)
 
