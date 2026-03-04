@@ -12,32 +12,44 @@
 
 A native macOS menu bar app for Tailscale — manage serves, funnels, peers, and exit nodes without leaving your workflow.
 
+```bash
+brew tap JungHoonGhae/tailbar
+brew install tailbar
+```
+
+## Screenshots
+
+| Overview | Peers |
+|:--------:|:-----:|
+| <img src="assets/popover-overview.png" width="280" /> | <img src="assets/popover-peers.png" width="280" /> |
+| Services, status, detected ports at a glance | Nodes with IPs, traffic stats, relay cities |
+
 ## Why TailBar?
 
 ### The problem: Tailscale on macOS lacks a power-user interface
 
-If you run `tailscale serve` to expose dev servers or manage exit nodes across your tailnet, your current options are:
+If you use `tailscale serve` to expose dev servers or manage exit nodes across your tailnet, your options today are:
 
 | Tool | What you have to do |
 |------|-------------------|
-| **Tailscale macOS app** | Shows basic connection status. No serve management, no exit node browsing, no traffic stats. You still need the terminal for anything useful. |
-| **CLI (`tailscale`)** | Full-featured, but requires remembering commands, parsing JSON output, and switching between terminal and your editor constantly. |
-| **Admin console (web)** | Powerful for network-wide config, but overkill for "which port am I serving?" or "switch my exit node." Requires opening a browser. |
+| **Tailscale macOS app** | Shows connection status. No serve management, no exit node browsing, no traffic stats. You still need the terminal. |
+| **CLI (`tailscale`)** | Full-featured, but requires remembering commands, parsing JSON, and constant context switching. |
+| **Admin console (web)** | Network-wide config, but overkill for "which port am I serving?" or "switch exit node." |
 
-**The daily friction looks like this:**
+**The daily friction:**
 
-1. You're coding, want to expose port 3000 → switch to terminal → `tailscale serve https / http://localhost:3000` → switch back
-2. Need to check if funnel is on → `tailscale serve status --json` → read JSON → figure it out
-3. Want to switch exit node → `tailscale set --exit-node=...` → but which nodes are available? → `tailscale status --json | jq '.Peer[] | select(.ExitNodeOption)'` → pick one → set it
-4. Colleague asks "what's my Tailscale IP?" → `tailscale ip` → copy → paste
+1. Coding, want to expose port 3000 → switch to terminal → `tailscale serve https / http://localhost:3000` → switch back
+2. Check if funnel is on → `tailscale serve status --json` → parse JSON
+3. Switch exit node → `tailscale status --json | jq '.Peer[] | select(.ExitNodeOption)'` → pick one → `tailscale set --exit-node=...`
+4. "What's my Tailscale IP?" → `tailscale ip` → copy → paste
 
 Every interaction breaks your flow.
 
 ### TailBar solves this
 
-**TailBar** puts everything in your menu bar — one click to see, manage, and control your entire Tailscale setup:
+One click from your menu bar:
 
-| | Tailscale macOS app | CLI | Admin console | **TailBar** |
+| | Tailscale app | CLI | Admin console | **TailBar** |
 |---|:---:|:---:|:---:|:---:|
 | View connection status | ✅ | ✅ | ✅ | ✅ |
 | Add/remove HTTPS serves | — | ✅ | — | ✅ |
@@ -48,11 +60,9 @@ Every interaction breaks your flow.
 | Auto-detect dev ports | — | — | — | ✅ |
 | Service health checks | — | — | — | ✅ |
 | Key expiry warnings | — | — | ✅ | ✅ |
+| Real-time updates | — | — | — | ✅ |
 | No terminal needed | ✅ | — | ✅ | ✅ |
 | No browser needed | ✅ | ✅ | — | ✅ |
-| Real-time updates | — | — | — | ✅ |
-
-Under the hood, TailBar uses the **Tailscale Local API** (the same interface the official apps use internally) for instant response times, with CLI as automatic fallback.
 
 ## Features
 
@@ -64,31 +74,7 @@ Under the hood, TailBar uses the **Tailscale Local API** (the same interface the
 - 🏥 **Service Health** — Real-time health checks on backend connectivity
 - ⚡ **Local API** — Direct communication via Tailscale Local API (CLI fallback included)
 
-## Screenshots
-
-| Popover UI | Classic Menu |
-|:----------:|:------------:|
-| *Tabbed popover with Overview, Peers, Services, Exit Nodes* | *Traditional NSMenu for lightweight usage* |
-
-## Requirements
-
-| Requirement | Version/Notes |
-|-------------|---------------|
-| macOS | 14.0+ (Sonoma) |
-| Tailscale | Installed and running |
-| Swift | 5.10+ (for building from source) |
-
 ## Installation
-
-### From source
-
-```bash
-git clone https://github.com/JungHoonGhae/TailBar.git
-cd TailBar
-swift build -c release
-cp .build/release/TailBar /usr/local/bin/
-TailBar
-```
 
 ### Homebrew
 
@@ -97,15 +83,20 @@ brew tap JungHoonGhae/tailbar
 brew install tailbar
 ```
 
+### From source
+
+```bash
+git clone https://github.com/JungHoonGhae/TailBar.git
+cd TailBar
+swift build -c release
+cp .build/release/TailBar /usr/local/bin/
+```
+
 ## Usage
 
-Just run `TailBar` — it lives in your menu bar as a background app (no Dock icon).
+Run `tailbar` — it lives in your menu bar as a background app (no Dock icon).
 
-**Menu bar icon:**
-- Connected: network icon with service count badge
-- Disconnected: slashed network icon
-
-**Keyboard shortcuts (Popover UI):**
+**Keyboard shortcuts:**
 
 | Shortcut | Action |
 |----------|--------|
@@ -115,9 +106,9 @@ Just run `TailBar` — it lives in your menu bar as a background app (no Dock ic
 | `Esc` | Close popover |
 
 **Settings:**
+- Launch at login
 - Refresh interval (5s / 10s / 30s / 1m)
 - Popover vs. classic menu toggle
-- Local API vs. CLI preference
 
 ## How it connects to Tailscale
 
@@ -126,78 +117,34 @@ TailBar uses the **Tailscale Local API** (preferred) or **CLI** (fallback):
 | Method | How it works |
 |--------|-------------|
 | **Local API** | Reads port from `/Library/Tailscale/ipnport`, auth token from `/Library/Tailscale/sameuserproof-{port}`, then HTTP to `127.0.0.1:{port}` |
-| **CLI** | Executes `/Applications/Tailscale.app/Contents/MacOS/Tailscale` (or homebrew path) with `--json` flags |
+| **CLI** | Executes `/Applications/Tailscale.app/Contents/MacOS/Tailscale` with `--json` flags |
 
-The Local API is the same interface the Tailscale desktop app uses internally — no CLI subprocess overhead, instant responses, and real-time streaming via `watch-ipn-bus`.
+The Local API is the same interface the Tailscale desktop app uses internally — no subprocess overhead, instant responses, and real-time streaming via `watch-ipn-bus`.
 
-## Architecture
+## Requirements
 
-```
-TailBar/
-├── App/              Entry point, AppDelegate
-├── Core/             Models, Store, Error types, Connection manager
-├── Networking/       Protocol + Local API client + CLI fallback
-├── Features/
-│   ├── ExitNode/     Exit node management & views
-│   ├── Peers/        Peer detail views with traffic stats
-│   ├── Profiles/     Multi-account switching
-│   └── Taildrop/     File sharing manager
-├── UI/
-│   ├── Tabs/         Overview, Peers, Services, Exit Nodes tabs
-│   ├── PopoverController    NSPopover-based UI
-│   └── StatusItemController NSMenu-based fallback UI
-├── Services/         Notification manager
-└── Persistence/      Alias store (UserDefaults)
-```
-
-**Key design decisions:**
-- **Protocol-based client** — `TailscaleClientProtocol` enables dependency injection and testing
-- **Local API first** — `http://127.0.0.1:{port}` with `Sec-Tailscale` auth, falls back to CLI automatically
-- **watch-ipn-bus streaming** — Real-time updates via Tailscale's event bus, polling as fallback
-- **Actor-based cache** — Thread-safe response caching with TTL
-- **Connection state machine** — `disconnected → connecting → connected → error → reconnecting` with exponential backoff
+| Requirement | Version/Notes |
+|-------------|---------------|
+| macOS | 14.0+ (Sonoma) |
+| Tailscale | Installed and running |
+| Swift | 5.10+ (for building from source) |
 
 ## Development
 
 ```bash
-# Build
-swift build
-
-# Run
-swift run
-
-# Test
-swift test
-
-# Build release
-swift build -c release
+swift build           # Build
+swift run             # Run
+swift test            # Test (20 tests across 2 suites)
+swift build -c release  # Release build
 ```
-
-### Running tests
-
-```bash
-swift test
-# 20 tests across 2 suites:
-# - Model Decoding (status, serve config, prefs, IPN bus)
-# - TailscaleStore (refresh, add/remove serve, funnel, error handling)
-```
-
-## CI/CD
-
-GitHub Actions workflow runs on every push/PR to `main`:
-- **Build** — `swift build` on macOS 14
-- **Test** — `swift test` with all unit tests
-- **Release** — Auto-creates GitHub release on version tags (`v*`)
 
 ## Roadmap
 
 - [ ] Multi-profile switching (switch Tailscale accounts)
 - [ ] Taildrop file sharing (send files to peers)
 - [ ] System notifications (peer changes, key expiry, health alerts)
-- [ ] Xcode `.app` bundle (code signing, notarization, app icon)
-- [ ] Sparkle auto-update framework
+- [ ] Xcode `.app` bundle (code signing, notarization)
 - [ ] MagicDNS name display and copy
-- [ ] Dark mode semantic colors (Asset Catalog)
 
 ## License
 
