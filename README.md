@@ -17,13 +17,6 @@ brew tap JungHoonGhae/tailbar
 brew install tailbar
 ```
 
-## Screenshots
-
-| Overview | Peers |
-|:--------:|:-----:|
-| <img src="assets/popover-overview.png" width="280" /> | <img src="assets/popover-peers.png" width="280" /> |
-| Services, status, detected ports at a glance | Nodes with IPs, traffic stats, relay cities |
-
 ## Why TailBar?
 
 ### The problem: Tailscale on macOS lacks a power-user interface
