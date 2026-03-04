@@ -109,10 +109,13 @@ struct NodeInfo: Identifiable, Sendable {
     let isOnline: Bool
     let isSelf: Bool
     let isExitNode: Bool
+    let isExitNodeOption: Bool
     let lastSeen: String?
     let relay: String?
     let curAddr: String?
     let keyExpiry: Date?
+    let rxBytes: Int?
+    let txBytes: Int?
 
     /// Best display name: manual alias > Tailscale DNS label > raw hostname
     var displayName: String {
@@ -212,4 +215,134 @@ struct NodeInfo: Identifiable, Sendable {
         "mad": "Madrid",
         "hnl": "Honolulu",
     ]
+}
+
+// MARK: - Preferences
+
+struct TailscalePrefs: Codable, Sendable {
+    let ControlURL: String?
+    let RouteAll: Bool?
+    let ExitNodeID: String?
+    let ExitNodeAllowLANAccess: Bool?
+    let CorpDNS: Bool?
+    let ShieldsUp: Bool?
+    let AdvertiseRoutes: [String]?
+    let Hostname: String?
+}
+
+struct PrefsPatch: Codable, Sendable {
+    var ExitNodeID: String?
+    var ExitNodeAllowLANAccess: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case ExitNodeID
+        case ExitNodeAllowLANAccess
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        // Only encode non-nil fields
+        if let v = ExitNodeID { try container.encode(v, forKey: .ExitNodeID) }
+        if let v = ExitNodeAllowLANAccess { try container.encode(v, forKey: .ExitNodeAllowLANAccess) }
+    }
+}
+
+// MARK: - Exit Node
+
+struct ExitNodeSuggestion: Codable, Sendable {
+    let ID: String?
+    let Name: String?
+    let Location: ExitNodeLocation?
+}
+
+struct ExitNodeLocation: Codable, Sendable {
+    let Country: String?
+    let CountryCode: String?
+    let City: String?
+    let CityCode: String?
+    let Priority: Int?
+}
+
+// MARK: - Profiles
+
+struct TailscaleProfile: Codable, Sendable, Identifiable {
+    let ID: String
+    let Name: String?
+    let NetworkProfile: ProfileNetwork?
+    let LocalUserID: String?
+    let UserProfile: ProfileUser?
+    let NodeID: String?
+
+    var id: String { self.ID }
+}
+
+struct ProfileNetwork: Codable, Sendable {
+    let MagicDNSName: String?
+    let DomainName: String?
+}
+
+struct ProfileUser: Codable, Sendable {
+    let ID: Int?
+    let LoginName: String?
+    let DisplayName: String?
+    let ProfilePicURL: String?
+}
+
+// MARK: - Taildrop
+
+struct FileTarget: Codable, Sendable, Identifiable {
+    let Node: FileTargetNode
+    let PeerAPI: [String]?
+
+    var id: String { Node.ID ?? Node.Name ?? "" }
+}
+
+struct FileTargetNode: Codable, Sendable {
+    let ID: String?
+    let Name: String?
+    let Addresses: [String]?
+    let Online: Bool?
+}
+
+// MARK: - IPN Bus
+
+struct IPNBusNotification: Codable, Sendable {
+    let Version: String?
+    let ErrMessage: String?
+    let LoginFinished: LoginFinishedMessage?
+    let State: Int?
+    let Prefs: TailscalePrefs?
+    let NetMap: NetMapSummary?
+    let Engine: EngineStatus?
+    let BrowseToURL: String?
+    let LocalTCPPort: Int?
+    let FilesWaiting: [IncomingFile]?
+    let Health: [String]?
+}
+
+struct LoginFinishedMessage: Codable, Sendable {}
+
+struct NetMapSummary: Codable, Sendable {
+    let SelfNode: PeerStatus?
+    let Peers: [PeerStatus]?
+    let DNS: DNSConfig?
+}
+
+struct DNSConfig: Codable, Sendable {
+    let Domains: [String]?
+    let Nameservers: [String]?
+}
+
+struct EngineStatus: Codable, Sendable {
+    let RBytes: Int?
+    let WBytes: Int?
+    let NumLive: Int?
+}
+
+struct IncomingFile: Codable, Sendable {
+    let Name: String?
+    let Started: String?
+    let DeclaredSize: Int?
+    let Received: Int?
+    let PartialPath: String?
 }

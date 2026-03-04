@@ -5,6 +5,11 @@ let package = Package(
     name: "TailBar",
     platforms: [.macOS(.v14)],
     targets: [
-        .executableTarget(name: "TailBar")
+        .executableTarget(name: "TailBar"),
+        .testTarget(
+            name: "TailBarTests",
+            dependencies: ["TailBar"],
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )

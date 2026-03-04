@@ -10,11 +10,16 @@ final class TailscaleStore {
     var serviceHealth: [Int: Bool] = [:]
     var detectedPorts: [Int] = []
 
+    private let client: any TailscaleClientProtocol
     private var refreshTask: Task<Void, Never>?
 
     private static let commonDevPorts = [
         3000, 3001, 4000, 4200, 5000, 5173, 5500, 8000, 8080, 8888, 9000,
     ]
+
+    init(client: any TailscaleClientProtocol) {
+        self.client = client
+    }
 
     var isConnected: Bool {
         status?.backendState == "Running"
@@ -112,7 +117,7 @@ final class TailscaleStore {
         defer { isLoading = false }
 
         do {
-            self.status = try await TailscaleClient.fetchStatus()
+            self.status = try await client.fetchStatus()
             self.error = nil
         } catch {
             self.error = error.localizedDescription
@@ -120,7 +125,7 @@ final class TailscaleStore {
         }
 
         do {
-            self.serveConfig = try await TailscaleClient.fetchServeConfig()
+            self.serveConfig = try await client.fetchServeConfig()
         } catch {
             self.serveConfig = nil
         }
@@ -141,7 +146,7 @@ final class TailscaleStore {
 
     func resetAllServes() async {
         do {
-            try await TailscaleClient.resetServes()
+            try await client.resetServes()
             await refresh()
         } catch {
             self.error = error.localizedDescription
@@ -151,9 +156,9 @@ final class TailscaleStore {
     func addServe(port: Int, funnel: Bool) async {
         do {
             if funnel {
-                try await TailscaleClient.enableFunnel(port: port)
+                try await client.enableFunnel(port: port)
             } else {
-                try await TailscaleClient.addServe(port: port)
+                try await client.addServe(port: port)
             }
             await refresh()
         } catch {
@@ -163,7 +168,7 @@ final class TailscaleStore {
 
     func removeServe(port: Int) async {
         do {
-            try await TailscaleClient.removeServe(port: port)
+            try await client.removeServe(port: port)
             await refresh()
         } catch {
             self.error = error.localizedDescription
@@ -173,9 +178,9 @@ final class TailscaleStore {
     func toggleFunnel(port: Int, enable: Bool) async {
         do {
             if enable {
-                try await TailscaleClient.enableFunnel(port: port)
+                try await client.enableFunnel(port: port)
             } else {
-                try await TailscaleClient.disableFunnel(port: port)
+                try await client.disableFunnel(port: port)
             }
             await refresh()
         } catch {
@@ -192,8 +197,8 @@ final class TailscaleStore {
             for service in services {
                 guard let localPort = extractLocalPort(service) else { continue }
                 let servePort = service.port
-                group.addTask {
-                    let ok = await TailscaleClient.checkPort(localPort)
+                group.addTask { [client] in
+                    let ok = await client.checkPort(localPort)
                     return (servePort, ok)
                 }
             }
@@ -216,8 +221,8 @@ final class TailscaleStore {
         var detected: [Int] = []
         await withTaskGroup(of: (Int, Bool).self) { group in
             for port in portsToScan {
-                group.addTask {
-                    let ok = await TailscaleClient.checkPort(port)
+                group.addTask { [client] in
+                    let ok = await client.checkPort(port)
                     return (port, ok)
                 }
             }
