@@ -53,3 +53,52 @@ jobs:
         with:
           files: dist/TailBar-${{ github.ref_name }}.zip
           generate_release_notes: true
+
+      - name: Compute SHA256
+        id: sha
+        run: echo "sha256=$(shasum -a 256 dist/TailBar-${TAG_NAME}.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone https://x-access-token:${GH_TOKEN}@github.com/JungHoonGhae/homebrew-tailbar.git /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+
+          cat > Formula/tailbar.rb << 'FORMULA'
+          class Tailbar < Formula
+            desc "Tailscale management menu bar app for macOS"
+            homepage "https://github.com/JungHoonGhae/TailBar"
+            url "https://github.com/JungHoonGhae/TailBar/releases/download/TAG_PLACEHOLDER/TailBar-TAG_PLACEHOLDER.zip"
+            sha256 "SHA_PLACEHOLDER"
+            license "MIT"
+
+            depends_on :macos
+
+            def install
+              bin.install "TailBar" => "tailbar"
+            end
+
+            def caveats
+              <<~EOS
+                TailBar runs as a menu bar app (no Dock icon).
+                Start it with:
+                  tailbar
+                Requires Tailscale to be installed and running.
+              EOS
+            end
+
+            test do
+              assert_predicate bin/"tailbar", :exist?
+            end
+          end
+          FORMULA
+
+          sed -i '' "s|TAG_PLACEHOLDER|${TAG_NAME}|g" Formula/tailbar.rb
+          sed -i '' "s|SHA_PLACEHOLDER|${{ steps.sha.outputs.sha256 }}|g" Formula/tailbar.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/tailbar.rb
+          git commit -m "Update TailBar to ${TAG_NAME}"
+          git push
