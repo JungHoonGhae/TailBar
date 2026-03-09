@@ -46,17 +46,17 @@ jobs:
         run: |
           mkdir -p dist
           cp -R .build/release/TailBar dist/
-          cd dist && zip -r "TailBar-${TAG_NAME}.zip" TailBar
+          cd dist && zip -r "tailbar-${TAG_NAME}.zip" TailBar
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/TailBar-${{ github.ref_name }}.zip
+          files: dist/tailbar-${{ github.ref_name }}.zip
           generate_release_notes: true
 
       - name: Compute SHA256
         id: sha
-        run: echo "sha256=$(shasum -a 256 dist/TailBar-${TAG_NAME}.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+        run: echo "sha256=$(shasum -a 256 dist/tailbar-${TAG_NAME}.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Install Doppler CLI
         uses: dopplerhq/cli-action@v3
@@ -89,7 +89,7 @@ jobs:
           class Tailbar < Formula
             desc "Tailscale management menu bar app for macOS"
             homepage "https://github.com/${REPO}"
-            url "https://github.com/${REPO}/releases/download/${TAG}/TailBar-${TAG}.zip"
+            url "https://github.com/${REPO}/releases/download/${TAG}/tailbar-${TAG}.zip"
             sha256 "${SHA256}"
             license "MIT"
 
@@ -120,5 +120,5 @@ jobs:
             echo "No formula changes."
             exit 0
           fi
-          git commit -m "chore: update TailBar ${TAG}"
+          git commit -m "chore: update tailbar ${TAG}"
           git push
