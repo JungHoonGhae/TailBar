@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct PeersTab: View {
     let store: TailscaleStore
     let searchText: String
