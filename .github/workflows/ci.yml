@@ -58,19 +58,39 @@ jobs:
         id: sha
         run: echo "sha256=$(shasum -a 256 dist/TailBar-${TAG_NAME}.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-      - name: Update Homebrew formula
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git clone https://x-access-token:${GH_TOKEN}@github.com/JungHoonGhae/homebrew-tailbar.git /tmp/homebrew-tap
-          cd /tmp/homebrew-tap
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
 
-          cat > Formula/tailbar.rb << 'FORMULA'
+      - name: Fetch Homebrew token
+        id: doppler
+        run: |
+          set -euo pipefail
+          TOKEN=$(doppler secrets get HOMEBREW_TAP_TOKEN --plain 2>/dev/null)
+          if [ -z "$TOKEN" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN not found in Doppler"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "HOMEBREW_TAP_TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+
+      - name: Update Homebrew tap
+        env:
+          TAG: ${{ github.ref_name }}
+          SHA256: ${{ steps.sha.outputs.sha256 }}
+          REPO: ${{ github.repository }}
+          TAP_TOKEN: ${{ steps.doppler.outputs.HOMEBREW_TAP_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/JungHoonGhae/homebrew-tailbar.git" /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+          mkdir -p Formula
+          cat > Formula/tailbar.rb <<FORMULA
           class Tailbar < Formula
             desc "Tailscale management menu bar app for macOS"
-            homepage "https://github.com/JungHoonGhae/TailBar"
-            url "https://github.com/JungHoonGhae/TailBar/releases/download/TAG_PLACEHOLDER/TailBar-TAG_PLACEHOLDER.zip"
-            sha256 "SHA_PLACEHOLDER"
+            homepage "https://github.com/${REPO}"
+            url "https://github.com/${REPO}/releases/download/${TAG}/TailBar-${TAG}.zip"
+            sha256 "${SHA256}"
             license "MIT"
 
             depends_on :macos
@@ -93,12 +113,12 @@ jobs:
             end
           end
           FORMULA
-
-          sed -i '' "s|TAG_PLACEHOLDER|${TAG_NAME}|g" Formula/tailbar.rb
-          sed -i '' "s|SHA_PLACEHOLDER|${{ steps.sha.outputs.sha256 }}|g" Formula/tailbar.rb
-
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Formula/tailbar.rb
-          git commit -m "Update TailBar to ${TAG_NAME}"
+          if git diff --cached --quiet; then
+            echo "No formula changes."
+            exit 0
+          fi
+          git commit -m "chore: update TailBar ${TAG}"
           git push
