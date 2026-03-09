@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct ExitNodesTab: View {
     let exitNodeManager: ExitNodeManager
     let searchText: String

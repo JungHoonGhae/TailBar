@@ -25,6 +25,7 @@ enum PopoverTab: Int, CaseIterable {
     }
 }
 
+@MainActor
 struct TailBarPopoverView: View {
     @Bindable var store: TailscaleStore
     let exitNodeManager: ExitNodeManager

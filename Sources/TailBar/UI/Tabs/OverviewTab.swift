@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct OverviewTab: View {
     let store: TailscaleStore
     let searchText: String
@@ -53,6 +54,7 @@ struct OverviewTab: View {
     }
 }
 
+@MainActor
 struct StatusSummaryView: View {
     let store: TailscaleStore
 
